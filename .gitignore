@@ -17,6 +17,11 @@ __pycache__/
 # Large data
 data/
 
+# Dataset caches
+notebooks/cache/
+notebooks/texts
+notebooks/gutenbergindex.db
+
 # Saved models
 checkpoints/
 models/
