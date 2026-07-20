@@ -1,0 +1,25 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# Large data
+data/
+
+# Saved models
+checkpoints/
+models/
+
+# Logs
+logs/
