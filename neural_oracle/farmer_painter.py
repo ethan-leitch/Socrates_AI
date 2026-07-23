@@ -19,7 +19,9 @@ class TheFarmer:
         self.cache = None
 
     def set_data_destination(self):
-        data_dir = os.path.abspath(os.path.join("..", "data", "gutenberg_catalog_cache"))
+        data_dir = os.path.abspath(
+            os.path.join("..", "data", "gutenberg_catalog_cache")
+        )
         GutenbergCacheSettings.set(
             CacheFilename=os.path.join(data_dir, "gutenbergindex.db"),
             CacheUnpackDir=os.path.join(data_dir, "epub"),
@@ -30,7 +32,9 @@ class TheFarmer:
 
     def retrieve_gutenberg_books(self):
         if self.created_cache:
-            print("Cache has already been created ensure .db & epub files are in gutenberg_cataglog_cache ")
+            print(
+                "Cache has already been created ensure .db & epub files are in gutenberg_cataglog_cache "
+            )
         else:
             GutenbergCache.create(
                 refresh=True,
@@ -53,7 +57,6 @@ class TheFarmer:
         metadata = {}
         # --- Step 1: gather metadata + confirm bookshelf ---
         for book_id in top_50_philosophy_ids:
-
             title, bookshelf_cat = get_book_titles(self.cache, book_id)
             authors = get_author_info(self.cache, book_id)
 
@@ -92,10 +95,6 @@ class TheFarmer:
         print(f"Texts saved to {output_dir}")
 
 
-
-
-
-
 class EDAPainter:
     """
     Produces EDA plots for the cleaned philosophy corpus.
@@ -107,7 +106,9 @@ class EDAPainter:
     SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 
     def __init__(self, metadata_path=None, clean_dir=None):
-        self.metadata_path = metadata_path or os.path.join("..", "data", "metadata.json")
+        self.metadata_path = metadata_path or os.path.join(
+            "..", "data", "metadata.json"
+        )
         self.clean_dir = clean_dir or os.path.join("..", "data", "clean_books")
 
         with open(self.metadata_path, encoding="utf-8") as f:
@@ -128,21 +129,29 @@ class EDAPainter:
             if "clean_char_count" not in info:
                 continue
 
-            with open(os.path.join(self.clean_dir, info["filename"]), encoding="utf-8") as f:
+            with open(
+                os.path.join(self.clean_dir, info["filename"]), encoding="utf-8"
+            ) as f:
                 text = f.read()
 
             words = self.WORD_RE.findall(text.lower())
-            sentences = [s for s in self.SENTENCE_SPLIT_RE.split(text) if len(s.split()) > 2]
+            sentences = [
+                s for s in self.SENTENCE_SPLIT_RE.split(text) if len(s.split()) > 2
+            ]
 
-            rows.append({
-                "book_id": book_id,
-                "title": info["title"],
-                "word_count": len(words),
-                "unique_word_count": len(set(words)),
-                "lexical_diversity": len(set(words)) / len(words) if words else 0,
-                "sentence_count": len(sentences),
-                "avg_sentence_length": len(words) / len(sentences) if sentences else 0,
-            })
+            rows.append(
+                {
+                    "book_id": book_id,
+                    "title": info["title"],
+                    "word_count": len(words),
+                    "unique_word_count": len(set(words)),
+                    "lexical_diversity": len(set(words)) / len(words) if words else 0,
+                    "sentence_count": len(sentences),
+                    "avg_sentence_length": len(words) / len(sentences)
+                    if sentences
+                    else 0,
+                }
+            )
 
         return pd.DataFrame(rows).set_index("book_id")
 
@@ -157,7 +166,11 @@ class EDAPainter:
     def plot_length_distribution(self):
         """Histogram of cleaned character counts per book."""
         clean_counts = pd.Series(
-            {bid: info["clean_char_count"] for bid, info in self.metadata.items() if "clean_char_count" in info}
+            {
+                bid: info["clean_char_count"]
+                for bid, info in self.metadata.items()
+                if "clean_char_count" in info
+            }
         )
 
         fig, ax = self._new_dark_axes()
@@ -180,13 +193,21 @@ class EDAPainter:
         Rank order comes straight from metadata's insertion order, since
         TheFarmer writes entries in the order the ranked query returned them.
         """
-        ranked_ids = [bid for bid in self.metadata if "clean_char_count" in self.metadata[bid]]
+        ranked_ids = [
+            bid for bid in self.metadata if "clean_char_count" in self.metadata[bid]
+        ]
         cumulative_chars = pd.Series(
             [self.metadata[bid]["clean_char_count"] for bid in ranked_ids]
         ).cumsum()
 
         fig, ax = self._new_dark_axes()
-        ax.plot(range(1, len(ranked_ids) + 1), cumulative_chars, color="#B02156FF", alpha=0.95, linewidth=2)
+        ax.plot(
+            range(1, len(ranked_ids) + 1),
+            cumulative_chars,
+            color="#B02156FF",
+            alpha=0.95,
+            linewidth=2,
+        )
 
         ax.grid(True, color="#444444", linewidth=0.8)
         for spine in ax.spines.values():
@@ -199,14 +220,21 @@ class EDAPainter:
         plt.tight_layout()
         plt.show()
 
-        print(f"Total corpus size: {cumulative_chars.iloc[-1]:,} characters across {len(ranked_ids)} books")
+        print(
+            f"Total corpus size: {cumulative_chars.iloc[-1]:,} characters across {len(ranked_ids)} books"
+        )
 
     def plot_lexical_diversity(self):
         """Horizontal bar chart of unique words / total words per book."""
         plot_df = self.eda_df.sort_values("lexical_diversity")
 
         fig, ax = self._new_dark_axes(figsize=(10, 14))
-        ax.barh(plot_df["title"], plot_df["lexical_diversity"], color="#B02156FF", alpha=0.95)
+        ax.barh(
+            plot_df["title"],
+            plot_df["lexical_diversity"],
+            color="#B02156FF",
+            alpha=0.95,
+        )
 
         ax.grid(True, color="#444444", linewidth=0.8, axis="x")
         for spine in ax.spines.values():
@@ -224,7 +252,12 @@ class EDAPainter:
         plot_df = self.eda_df.sort_values("avg_sentence_length")
 
         fig, ax = self._new_dark_axes(figsize=(10, 14))
-        ax.barh(plot_df["title"], plot_df["avg_sentence_length"], color="#B02156FF", alpha=0.95)
+        ax.barh(
+            plot_df["title"],
+            plot_df["avg_sentence_length"],
+            color="#B02156FF",
+            alpha=0.95,
+        )
 
         ax.grid(True, color="#444444", linewidth=0.8, axis="x")
         for spine in ax.spines.values():
