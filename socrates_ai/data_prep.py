@@ -8,9 +8,9 @@ import seaborn as sns
 
 
 from gutenbergpy.gutenbergcache import GutenbergCache, GutenbergCacheSettings
-from neural_oracle.helpers import (get_book_titles, get_author_info, download_bookid,
+from socrates_ai.helpers import (get_book_titles, get_author_info, download_bookid,
                                    clean_text, CleanedDataChecks)
-from neural_oracle.resources import TOP_50_PHILOSOPHY_QUERY
+from socrates_ai.resources import TOP_50_PHILOSOPHY_QUERY
 
 
 class TheFarmer:
