@@ -8,7 +8,8 @@ import seaborn as sns
 
 
 from gutenbergpy.gutenbergcache import GutenbergCache, GutenbergCacheSettings
-from neural_oracle.helpers import get_book_titles, get_author_info, download_bookid
+from neural_oracle.helpers import (get_book_titles, get_author_info, download_bookid,
+                                   clean_text, CleanedDataChecks)
 from neural_oracle.resources import TOP_50_PHILOSOPHY_QUERY
 
 
@@ -17,6 +18,9 @@ class TheFarmer:
         self.num_books = 50
         self.created_cache = GutenbergCache.exists()
         self.cache = None
+        self.output_dir = os.path.join("..", "data", "raw_books")
+        self.metadata_path = os.path.join("..", "data", "metadata.json")
+        self.clean_dir = os.path.join("..", "data", "clean_books")
 
     def set_data_destination(self):
         data_dir = os.path.abspath(
@@ -50,10 +54,8 @@ class TheFarmer:
         query_results = self.cache.native_query(TOP_50_PHILOSOPHY_QUERY).fetchall()
         top_50_philosophy_ids = [r[0] for r in query_results]
 
-        output_dir = os.path.join("..", "data", "raw_books")
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
 
-        metadata_path = os.path.join("..", "data", "metadata.json")
         metadata = {}
         # --- Step 1: gather metadata + confirm bookshelf ---
         for book_id in top_50_philosophy_ids:
@@ -73,14 +75,14 @@ class TheFarmer:
             }
         # --- Step 2: download texts ---
         for book_id in top_50_philosophy_ids:
-            filepath = os.path.join(output_dir, f"{book_id}.txt")
+            filepath = os.path.join(self.output_dir, f"{book_id}.txt")
 
             if os.path.exists(filepath):
                 print(f"Skipping {book_id}, already downloaded")
                 metadata[book_id]["char_count"] = os.path.getsize(filepath)
                 continue
 
-            char_count, error = download_bookid(book_id, output_dir)
+            char_count, error = download_bookid(book_id, self.output_dir)
             metadata[book_id]["char_count"] = char_count
             if error is not None:
                 metadata[book_id]["error"] = error
@@ -88,11 +90,50 @@ class TheFarmer:
             time.sleep(1)
 
         # --- Step 3: save metadata ---
-        with open(metadata_path, "w", encoding="utf-8") as f:
+        with open(self.metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
 
-        print(f"\nMetadata saved to {metadata_path}")
-        print(f"Texts saved to {output_dir}")
+        print(f"\nMetadata saved to {self.metadata_path}")
+        print(f"Texts saved to {self.output_dir}")
+
+    def clean_books(self):
+
+        os.makedirs(self.clean_dir, exist_ok=True)
+        with open(self.metadata_path, encoding="utf-8") as f:
+            metadata = json.load(f)
+
+        for book_id, info in metadata.items():
+            if info.get("char_count") is None:
+                continue  # download failed for this book, nothing to clean
+            raw_path = os.path.join(self.output_dir, info["filename"])
+            clean_path = os.path.join(self.clean_dir, info["filename"])
+
+            with open(raw_path, encoding="utf-8") as f:
+                raw_text = f.read()
+            cleaned = clean_text(raw_text)
+
+            with open(clean_path, "w", encoding="utf-8") as f:
+                f.write(cleaned)
+            info["clean_char_count"] = len(cleaned)
+
+        with open(self.metadata_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        print(f"Cleaned {sum(1 for i in metadata.values() if 'clean_char_count' in i)} books -> {self.clean_dir}")
+
+    def check_cleaned_data(self):
+        checks = CleanedDataChecks(
+            metadata_path=self.metadata_path,
+            output_dir=self.output_dir,
+            clean_dir=self.clean_dir,
+            cache=self.cache,
+        )
+        checks.run_all()
+        return checks
+
+
+
+
+
 
 
 class EDAPainter:
