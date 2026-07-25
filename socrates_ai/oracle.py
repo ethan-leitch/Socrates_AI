@@ -1,13 +1,13 @@
-import os
 import glob
+import os
 
-from tokenizers import decoders
-from tokenizers import Tokenizer
+from tokenizers import Tokenizer, decoders
 from tokenizers.models import BPE
-from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import ByteLevel
+from tokenizers.trainers import BpeTrainer
 
-class TokeniseBooks:
+
+class Translator:
     def __init__(self, cleaned_books_path, Vocab_size = 8000):
         self.books_path = cleaned_books_path
         self.vocab_size = Vocab_size
@@ -34,7 +34,8 @@ class TokeniseBooks:
         print(f"Saved to {tokeniser_path}")
         self.tokeniser_path = tokeniser_path
 
-    def load_tokeniser(self):
+    def load_tokeniser(self, path=None):
+        self.tokeniser_path = path
         if self.tokeniser_path is None:
             print("Tokeniser path not set")
             return
