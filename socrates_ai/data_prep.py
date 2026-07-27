@@ -30,23 +30,35 @@ class TheFarmer:
         data_dir = os.path.abspath(
             os.path.join("..", "data", "gutenberg_catalog_cache")
         )
-        unpack_dir = os.path.join(data_dir, "epub")
-
-        # gutenbergpy never creates these itself -- confirmed there's no
-        # makedirs/mkdir anywhere in its download/unpack/parse code, it just
-        # assumes the destination already exists. Without this, a deleted (or
-        # freshly cloned) cache directory fails partway through with a
-        # FileNotFoundError at parse time, after download has already run.
         os.makedirs(data_dir, exist_ok=True)
-        os.makedirs(unpack_dir, exist_ok=True)
 
+        # Deliberately NOT setting CacheUnpackDir here, even though that seems
+        # like the obvious thing to do. gutenbergpy's own extraction code
+        # (Utils.unpack_tarbz2) calls tar.extract(member) with no `path`
+        # argument, which always extracts relative to the current working
+        # directory, following the archive's own internal "cache/epub/..."
+        # structure -- it never actually reads CacheUnpackDir. Only the
+        # *parser* (reads FROM that path) and *cleanup* (deletes FROM that
+        # path) honor it. Point it anywhere other than gutenbergpy's own
+        # default and the parser looks in an empty directory (silently
+        # "succeeding" with 0 books), while the real extracted files sit
+        # wherever CWD actually put them, uncleaned. Confirmed this the hard
+        # way: pointing it at data/gutenberg_catalog_cache/epub left 79,017
+        # real files sitting in notebooks/cache/epub instead, and a
+        # 0-book gutenbergindex.db that LOOKED valid enough to skip rebuilding.
+        #
+        # Only the final .db file's location (CacheFilename) is genuinely
+        # respected end-to-end, so that's the only thing we redirect.
         GutenbergCacheSettings.set(
             CacheFilename=os.path.join(data_dir, "gutenbergindex.db"),
-            CacheUnpackDir=unpack_dir,
         )
         print("Storing cache data at:")
         print(GutenbergCacheSettings.CACHE_FILENAME)
-        print(GutenbergCacheSettings.CACHE_RDF_UNPACK_DIRECTORY)
+        print(
+            f"(RDF files unpack to '{GutenbergCacheSettings.CACHE_RDF_UNPACK_DIRECTORY}', "
+            "relative to wherever this notebook's CWD is -- gutenbergpy always does this, "
+            "regardless of settings, and cleans it up itself via deleteTemp=True)"
+        )
 
     def retrieve_gutenberg_books(self):
         if self.created_cache:
@@ -138,6 +150,7 @@ class TheFarmer:
         with open(self.metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
         print(f"Cleaned {sum(1 for i in metadata.values() if 'clean_char_count' in i)} books -> {self.clean_dir}")
+
 
     def check_cleaned_data(self):
         checks = CleanedDataChecks(

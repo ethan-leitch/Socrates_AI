@@ -8,7 +8,7 @@ from tokenizers.trainers import BpeTrainer
 
 
 class Translator:
-    def __init__(self, cleaned_books_path, Vocab_size = 8000):
+    def __init__(self, cleaned_books_path, Vocab_size = 16000):
         self.books_path = cleaned_books_path
         self.vocab_size = Vocab_size
         self.tokeniser_path = None
@@ -35,12 +35,12 @@ class Translator:
         self.tokeniser_path = tokeniser_path
 
     def load_tokeniser(self, path=None):
-        self.tokeniser_path = path
+        self.tokeniser_path = path if path is not None else self.tokeniser_path
+
         if self.tokeniser_path is None:
-            print("Tokeniser path not set")
-            return
-        else:
-            return Tokenizer.from_file(self.tokeniser_path)
+            raise ValueError("Tokeniser path not set.")
+
+        return Tokenizer.from_file(self.tokeniser_path)
 
     def test_tokeniser(self, tokeniser: Tokenizer, sample = "Also sprach Zarathustra: the eternal recurrence of the same."):
         loaded_tokeniser = tokeniser

@@ -143,10 +143,14 @@ class CleanedDataChecks:
         return missing_raw, failed_downloads
 
     def check_short_texts(self, threshold=5000):
+        # skip books with no clean_char_count entirely (download/cleaning
+        # never happened) rather than defaulting to 0 -- that's a different
+        # problem, already surfaced by check_missing_and_failed(), not a
+        # "cleaned into something too short" issue this check is meant to catch
         short_books = {
             bid: info["clean_char_count"]
             for bid, info in self.metadata.items()
-            if info.get("clean_char_count", 0) < threshold
+            if "clean_char_count" in info and info["clean_char_count"] < threshold
         }
         print(f"Books below {threshold} chars after cleaning:")
         for bid, count in short_books.items():
