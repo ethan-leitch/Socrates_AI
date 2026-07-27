@@ -1,21 +1,25 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import os
 import json
-import time
+import os
 import re
+import time
+
+import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
-
-
 from gutenbergpy.gutenbergcache import GutenbergCache, GutenbergCacheSettings
-from socrates_ai.helpers import (get_book_titles, get_author_info, download_bookid,
-                                   clean_text, CleanedDataChecks)
-from socrates_ai.resources import TOP_50_PHILOSOPHY_QUERY
+
+from socrates_ai.helpers import (
+    CleanedDataChecks,
+    clean_text,
+    download_bookid,
+    get_author_info,
+    get_book_titles,
+)
+from socrates_ai.resources import PHILOSOPHY_QUERY, PHILOSOPHY_SHELVES
 
 
 class TheFarmer:
     def __init__(self):
-        self.num_books = 50
         self.created_cache = GutenbergCache.exists()
         self.cache = None
         self.output_dir = os.path.join("..", "data", "raw_books")
@@ -26,9 +30,19 @@ class TheFarmer:
         data_dir = os.path.abspath(
             os.path.join("..", "data", "gutenberg_catalog_cache")
         )
+        unpack_dir = os.path.join(data_dir, "epub")
+
+        # gutenbergpy never creates these itself -- confirmed there's no
+        # makedirs/mkdir anywhere in its download/unpack/parse code, it just
+        # assumes the destination already exists. Without this, a deleted (or
+        # freshly cloned) cache directory fails partway through with a
+        # FileNotFoundError at parse time, after download has already run.
+        os.makedirs(data_dir, exist_ok=True)
+        os.makedirs(unpack_dir, exist_ok=True)
+
         GutenbergCacheSettings.set(
             CacheFilename=os.path.join(data_dir, "gutenbergindex.db"),
-            CacheUnpackDir=os.path.join(data_dir, "epub"),
+            CacheUnpackDir=unpack_dir,
         )
         print("Storing cache data at:")
         print(GutenbergCacheSettings.CACHE_FILENAME)
@@ -51,18 +65,23 @@ class TheFarmer:
         self.cache = GutenbergCache.get_cache()
 
     def farm_philosophy_books(self):
-        query_results = self.cache.native_query(TOP_50_PHILOSOPHY_QUERY).fetchall()
-        top_50_philosophy_ids = [r[0] for r in query_results]
+        query_results = self.cache.native_query(PHILOSOPHY_QUERY).fetchall()
+        philosophy_book_ids = [r[0] for r in query_results]
+        print(f"{len(philosophy_book_ids)} philosophy books found")
 
         os.makedirs(self.output_dir, exist_ok=True)
 
         metadata = {}
         # --- Step 1: gather metadata + confirm bookshelf ---
-        for book_id in top_50_philosophy_ids:
+        for book_id in philosophy_book_ids:
             title, bookshelf_cat = get_book_titles(self.cache, book_id)
             authors = get_author_info(self.cache, book_id)
 
-            is_philosophy = bookshelf_cat == "Philosophy"
+            # PHILOSOPHY_SHELVES, not a single hardcoded name -- a book can
+            # legitimately come from either shelf, so checking against just
+            # "Philosophy" would wrongly flag every book pulled from the
+            # larger "Category: Philosophy & Ethics" shelf as suspicious
+            is_philosophy = bookshelf_cat in PHILOSOPHY_SHELVES
             flag = "✓" if is_philosophy else "✗ CHECK THIS ONE"
             print(f"{book_id}: {title} — {authors} — {bookshelf_cat} {flag}")
 
@@ -74,7 +93,7 @@ class TheFarmer:
                 "filename": f"{book_id}.txt",
             }
         # --- Step 2: download texts ---
-        for book_id in top_50_philosophy_ids:
+        for book_id in philosophy_book_ids:
             filepath = os.path.join(self.output_dir, f"{book_id}.txt")
 
             if os.path.exists(filepath):
