@@ -1,11 +1,11 @@
-import requests
+import hashlib
+import json
 import os
 import re
-import json
-import hashlib
 import unicodedata
 from difflib import SequenceMatcher
 
+import requests
 from gutenbergpy.textget import get_text_by_id, strip_headers
 
 
@@ -239,3 +239,4 @@ class CleanedDataChecks:
         self.check_exact_duplicates()
         print("\n=== Check 6: near-duplicate/overlapping works ===")
         self.check_near_duplicates()
+

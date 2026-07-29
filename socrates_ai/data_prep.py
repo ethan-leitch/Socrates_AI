@@ -8,14 +8,14 @@ import pandas as pd
 import seaborn as sns
 from gutenbergpy.gutenbergcache import GutenbergCache, GutenbergCacheSettings
 
-from socrates_ai.helpers import (
+from socrates_ai.helpers.data_helpers import (
     CleanedDataChecks,
     clean_text,
     download_bookid,
     get_author_info,
     get_book_titles,
 )
-from socrates_ai.resources import PHILOSOPHY_QUERY, PHILOSOPHY_SHELVES
+from socrates_ai.helpers.resources import PHILOSOPHY_QUERY, PHILOSOPHY_SHELVES
 
 
 class TheFarmer:
