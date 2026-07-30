@@ -1,10 +1,4 @@
 # Socrates AI
 
 Training a small GPT from scratch on classical philosophy texts.
-
-## Goals
-
-- Build a decoder-only transformer in PyTorch
-- Train from scratch
-- Compare against GRU
-- Experiment with tokenisation
+This is more of a learning poject rather than trying to build a impressive model
