@@ -30,19 +30,19 @@ This project is inspired from my 3rd year ML module where I built a character le
 
 
 ## Code Layout
-Pre-processing:
+**Pre-processing:**  
 [`TheFarmer`](socrates_ai/data_prep.py#L21) -> Everything to do with the raw .txt book files. Ingests the training data, sets correct directories for storing files, wraps the GutenbergCache class (more info below) to actually retrieve the books, uses SQL queries to filter from the Gutenberg STAR schema and cleans and runs tests on the books. Also creates a metadata file which contains useful info about the books we needed.
 
--- [`CleanedDataChecks`](socrates_ai/helpers/data_helpers.py#L118) -> A simple class to group all of the data checks together, used in `TheFarmer`.
+[`CleanedDataChecks`](socrates_ai/helpers/data_helpers.py#L118) -> A simple class to group all of the data checks together, used in `TheFarmer`.
 
 [`EDAPainter`](socrates_ai/data_prep.py#L171) -> All data analysis visuals can be easily produced using this class, automatically uses the exact file paths created in the farmer, but the user has the option to manually set them too. Creates a nice interpretable dataframe from the metadata json. `EDAPainter` also has style, setting each plot to a custom aesthetic colour scheme.
 
-Model Preparation:
+**Model Preparation:**  
 [`Translator`](socrates_ai/model_prep.py#L14) -> Uses the classic Byte Pair Encoding algorithm to tokenise the books. Vocab size is set to 16000 but can be set by the user. Creates an easy interface for the user to tokenise all the training data. Saves the tokenised books in a structured directory, as well as functionality to load the trained tokeniser and test it for a quick sanity check
 
 [`MiniTransformer`](socrates_ai/model_prep.py#L147) -> Implements the GPT-style transformer architecture using PyTorch. Uses [`CausalSelfAttention`](socrates_ai/model_prep.py#L69), [`FeedForward`](socrates_ai/model_prep.py#L110) and [`TransformerBlock`](socrates_ai/model_prep.py#L128) to construct the final structure. More details on the framework and specific parameters will be laid out in "(more_info tbc, I will come back to this)"
 
-Training:
+**Training:**  
 [`TrainingSocrates`](socrates_ai/training.py#L11) -> This is where our Socrates AI learns, aka the model training functionality. Includes batching, loss estimates, learning rate warmup + decay, gradient clipping and auto checkpoint saving of the model during training. The user can easily then reload and partly trained model simply using the `load_checkpoint()` method. Alongside this it provides us with a simple plot of loss curves and basic inference using the `.talk()` method.
 
 ## Data & Tokeniser
