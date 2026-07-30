@@ -116,6 +116,12 @@ class TrainingSocrates:
                 if verbose:
                     print(f"step {self.step:6d} | lr {lr:.2e} | train loss {train_loss:.4f} | val loss {val_loss:.4f}")
 
+                # checkpoint here too, not just at the very end of the run --
+                # for a long unattended run, losing everything since the last
+                # save to a crash/forced sleep/power loss is a real risk;
+                # this bounds the loss to at most eval_interval steps
+                self.save_checkpoint()
+
         elapsed = time.time() - start_time
         print(f"\nRun finished in {elapsed:.1f}s ({self.step} total steps trained so far)")
 
@@ -202,7 +208,7 @@ class TrainingSocrates:
         plt.show()
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, eos_id=None):
+    def generate(self, idx, max_new_tokens, temperature=0.7, eos_id=None):
         self.model.eval()
         for _ in range(max_new_tokens):
             idx_cond = idx if idx.size(1) <= self.block_size else idx[:, -self.block_size :]
