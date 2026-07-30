@@ -103,7 +103,7 @@ def strip_gutenberg_boilerplate(text):
 
 def clean_text(text):
     """
-    Light normalization for LM training data. Keeps wording/punctuation
+    Light normalisation for LM training data. Keeps wording/punctuation
     intact, only touches encoding artifacts and whitespace.
     """
     text = text.lstrip("﻿")  # BOM from some direct downloads

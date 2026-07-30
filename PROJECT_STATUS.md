@@ -8,10 +8,10 @@ This file exists as a durable snapshot of the project's state, kept current enou
 
 - **634 books**, pulled from two Gutenberg bookshelves: `Philosophy` (78 books) and the larger `Category: Philosophy & Ethics` (556 books) — English text only.
 - ~256,005,413 clean characters, ~64M estimated tokens (56.2M train / 7.46M val after an ~10% held-out-whole-books split).
-- Validation is held out as **whole books**, not a slice of the token stream — tests generalization to unseen material, not just memorized continuations.
+- Validation is held out as **whole books**, not a slice of the token stream — tests generalisation to unseen material, not just memorised continuations.
 - Source data lives in `data/` (gitignored): `raw_books/`, `clean_books/`, `metadata.json`, `gutenberg_catalog_cache/` (the local SQLite Gutenberg catalog).
 
-## Tokenizer
+## Tokeniser
 
 - Custom-trained **byte-level BPE** (HuggingFace `tokenizers` library, not `transformers`), trained on the cleaned corpus itself — not a pretrained/borrowed vocabulary.
 - `vocab_size=16000`. Special tokens: `<pad>`, `<unk>`, `<bos>`, `<eos>` (books are wrapped in `<bos>`/`<eos>` before being concatenated for training).
@@ -20,7 +20,7 @@ This file exists as a durable snapshot of the project's state, kept current enou
 
 ## Model architecture
 
-Built from scratch in PyTorch — no HuggingFace model classes. Lives in `socrates_ai/model_prep.py` (`MiniTransformer`, plus `Translator` for the tokenizer lifecycle).
+Built from scratch in PyTorch — no HuggingFace model classes. Lives in `socrates_ai/model_prep.py` (`MiniTransformer`, plus `Translator` for the tokeniser lifecycle).
 
 - `vocab_size=16000, d_model=256, n_layers=4, n_heads=4, block_size=128, dropout=0.1`
 - Standard pre-norm transformer blocks: causal self-attention via `F.scaled_dot_product_attention(..., is_causal=True)`, GELU feedforward (4x expansion), weight-tied embedding/output head.
@@ -30,11 +30,11 @@ Built from scratch in PyTorch — no HuggingFace model classes. Lives in `socrat
 
 ## Training (`socrates_ai/training.py`, `TrainingSocrates`)
 
-Takes an already-built `MiniTransformer` (architecture only, constructed separately) and owns everything about training it: optimizer, LR schedule, gradient clipping, loss history, checkpointing, and generation.
+Takes an already-built `MiniTransformer` (architecture only, constructed separately) and owns everything about training it: optimiser, LR schedule, gradient clipping, loss history, checkpointing, and generation.
 
 - **AdamW**, weight_decay=1e-2, gradient clipping at norm 1.0.
 - **LR schedule**: linear warmup over the first `warmup_steps=200`, then cosine decay to `min_lr=3e-5` by `decay_target_steps=4000`. Keyed off the **global**, persistent step count (`self.step`), not the size of any individual `.train()` call — warmup only ever fires once across the model's entire training lifetime, and decay progresses smoothly no matter how many separate sessions it takes to get there. (This was a real bug we found and fixed — an earlier per-call-scoped version re-triggered warmup on every resume, collapsing the LR back toward zero each time.)
-- **Checkpointing**: `save_checkpoint()` writes model weights, optimizer state (so Adam's momentum survives a resume, not just the weights), loss history, and step count together into one file under `data/checkpoints/`. Auto-saves at the end of every `.train()` call. `load_checkpoint(path=None)` defaults to the most recent checkpoint, and checks the model's architecture (every parameter's shape) against what's recorded in the checkpoint *before* attempting to load — fails with one clear error on a mismatch (e.g. an accidentally-changed `d_model`) instead of either a cryptic PyTorch trace or silently loading something wrong.
+- **Checkpointing**: `save_checkpoint()` writes model weights, optimiser state (so Adam's momentum survives a resume, not just the weights), loss history, and step count together into one file under `data/checkpoints/`. Auto-saves at the end of every `.train()` call. `load_checkpoint(path=None)` defaults to the most recent checkpoint, and checks the model's architecture (every parameter's shape) against what's recorded in the checkpoint *before* attempting to load — fails with one clear error on a mismatch (e.g. an accidentally-changed `d_model`) instead of either a cryptic PyTorch trace or silently loading something wrong.
 - **Generation**: `generate()` (token-id level, autoregressive, temperature sampling via `torch.multinomial`, sliding-window context crop, optional `<eos>` early stop) and `talk()` (string in, string out — handles encode/decode).
 
 ## Current training progress

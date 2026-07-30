@@ -43,7 +43,7 @@ class TrainingSocrates:
         self.checkpoint_dir = checkpoint_dir or os.path.join("..", "data", "checkpoints")
 
         # bound to THIS model's parameters at construction time -- load_checkpoint()
-        # restores this optimizer's state in place rather than replacing it,
+        # restores this optimiser's state in place rather than replacing it,
         # so it can never end up pointing at a different model's tensors
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=1e-2)
 
@@ -74,7 +74,7 @@ class TrainingSocrates:
         # first warmup_steps of all training ever, and decay progresses
         # smoothly toward decay_target_steps no matter how many separate
         # sessions it takes to get there. A resumed session doesn't reset
-        # either phase: the optimizer state (Adam's momentum) is restored
+        # either phase: the optimiser state (Adam's momentum) is restored
         # from the checkpoint too, so there's nothing unstable left for a
         # fresh warmup to protect against -- re-triggering it would only
         # waste steps re-ramping back up to where the LR already was

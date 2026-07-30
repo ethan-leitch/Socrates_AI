@@ -163,11 +163,6 @@ class TheFarmer:
         return checks
 
 
-
-
-
-
-
 class EDAPainter:
     """
     Produces EDA plots for the cleaned philosophy corpus.
