@@ -48,16 +48,16 @@ This project is inspired from my 3rd year ML module where I built a character le
 ## Data & Tokeniser
 All data used to train the model is from the Gutenberg project, the oldest digital library. (https://www.gutenberg.org/about/). I've filtered for all books in the philosophy category, which totals to 634 books, and roughly 63.5 million tokens. An important note is that all of the data is not seen in the github repo due to the size (it's in .gitignore), but if you were to run the farmer it would download in the correct places and create the file structure.
 
-I decided to go with Hugging Face's tokenizers library to actually implement the tokenising logic, it's pretty simple to use does the job, and importantly lets us train the tokeniser on our entire corpus. This is useful as we're likely to have a more specific set of tokens to do with philosophy, rather than use a pre-trained one where it has more standard tokens.
+I decided to go with Hugging Face's tokenizers library to actually implement the tokenising logic, it's pretty simple to use, does the job, and importantly lets us train the tokeniser on our entire corpus. This is useful as we're likely to have a more specific set of tokens to do with philosophy, rather than use a pre-trained one where it has more standard tokens.
 
 
 ## Architecture & Training
 
 Model: `vocab_size=16000, d_model=256, n_layers=4, n_heads=4, block_size=128, dropout=0.1` — **7,288,320 parameters** total.
 
-Optimiser is AdamW with gradient clipping (norm 1.0), and the learning rate follows a linear warmup (200 steps) into a cosine decay down to a minimum LR. Warmup only ever happens once across the model's whole training history — not on every resume — since resuming restores the optimiser's own momentum state too, so there's nothing left for a fresh warmup to protect against.
+Optimiser is AdamW with gradient clipping (norm 1.0), and the learning rate follows a linear warmup (200 steps) into a cosine decay down to a minimum LR. Warmup only ever happens once across the model's whole training history, not on every resume, since resuming restores the optimiser's own momentum state too, so there's nothing left for a fresh warmup to protect against.
 
-`TrainingSocrates` checkpoints automatically during training (not just at the end of a run), saving model weights, optimiser state, loss history and step count together into one file. This means training can be safely stopped and resumed across multiple sessions — `load_checkpoint()` picks up exactly where the last run left off, including the LR schedule position, and validates the model's architecture against the checkpoint before loading so a shape mismatch fails loudly instead of silently.
+`TrainingSocrates` checkpoints automatically during training (not just at the end of a run), saving model weights, optimiser state, loss history and step count together into one file. This means training can be safely stopped and resumed across multiple sessions, `load_checkpoint()` picks up exactly where the last run left off, including the LR schedule position, and validates the model's architecture against the checkpoint before loading so a shape mismatch fails loudly instead of silently.
 
 ## Project Structure
 
