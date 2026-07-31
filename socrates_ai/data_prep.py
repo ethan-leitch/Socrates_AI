@@ -292,48 +292,56 @@ class EDAPainter:
             f"Total corpus size: {cumulative_chars.iloc[-1]:,} characters across {len(ranked_ids)} books"
         )
 
-    def plot_lexical_diversity(self):
+    def _plot_extremes_barh(self, column, title, xlabel, top_n=5):
+        """
+        Horizontal bar chart of only the top_n lowest and top_n highest books
+        by `column`. With 600+ books, plotting all of them is unreadable --
+        and both of these metrics are only ever used as outlier checks (see
+        the markdown notes above these plots in the notebooks), so the
+        middle hundreds of books were never the point. Lowest/highest are
+        coloured differently, with a blank row between them, so it's clear
+        these are two separate extremes and not 2*top_n books in a row.
+        """
+        sorted_df = self.eda_df.sort_values(column)
+        lowest = sorted_df.head(top_n)
+        highest = sorted_df.tail(top_n)
+
+        fig, ax = self._new_dark_axes(figsize=(10, max(6, top_n * 0.5)))
+
+        # blank row as a visual gap between the two groups, rather than a
+        # plain colour split alone -- makes the jump in `column` between
+        # them (usually large, given how many books are skipped) obvious
+        titles = list(lowest["title"]) + [""] + list(highest["title"])
+        values = list(lowest[column]) + [0] + list(highest[column])
+        colors = ["#3E75EA"] * len(lowest) + ["#000000"] + ["#B02156FF"] * len(highest)
+
+        ax.barh(titles, values, color=colors, alpha=0.95)
+
+        ax.grid(True, color="#444444", linewidth=0.8, axis="x")
+        for spine in ax.spines.values():
+            spine.set_color("#3E75EA")
+
+        ax.set_title(f"{title} (lowest {top_n} vs. highest {top_n} of {len(self.eda_df)} books)")
+        ax.set_xlabel(xlabel)
+        ax.tick_params(axis="y", labelsize=7)
+
+        plt.tight_layout()
+        plt.show()
+
+    def plot_lexical_diversity(self, top_n=5):
         """Horizontal bar chart of unique words / total words per book."""
-        plot_df = self.eda_df.sort_values("lexical_diversity")
-
-        fig, ax = self._new_dark_axes(figsize=(10, 14))
-        ax.barh(
-            plot_df["title"],
-            plot_df["lexical_diversity"],
-            color="#B02156FF",
-            alpha=0.95,
+        self._plot_extremes_barh(
+            "lexical_diversity",
+            "Lexical Diversity per Book (unique words / total words)",
+            "Lexical Diversity",
+            top_n=top_n,
         )
 
-        ax.grid(True, color="#444444", linewidth=0.8, axis="x")
-        for spine in ax.spines.values():
-            spine.set_color("#3E75EA")
-
-        ax.set_title("Lexical Diversity per Book (unique words / total words)")
-        ax.set_xlabel("Lexical Diversity")
-        ax.tick_params(axis="y", labelsize=7)
-
-        plt.tight_layout()
-        plt.show()
-
-    def plot_avg_sentence_length(self):
+    def plot_avg_sentence_length(self, top_n=5):
         """Horizontal bar chart of average words per sentence per book."""
-        plot_df = self.eda_df.sort_values("avg_sentence_length")
-
-        fig, ax = self._new_dark_axes(figsize=(10, 14))
-        ax.barh(
-            plot_df["title"],
-            plot_df["avg_sentence_length"],
-            color="#B02156FF",
-            alpha=0.95,
+        self._plot_extremes_barh(
+            "avg_sentence_length",
+            "Average Sentence Length per Book (words per sentence)",
+            "Average Words per Sentence",
+            top_n=top_n,
         )
-
-        ax.grid(True, color="#444444", linewidth=0.8, axis="x")
-        for spine in ax.spines.values():
-            spine.set_color("#3E75EA")
-
-        ax.set_title("Average Sentence Length per Book (words per sentence)")
-        ax.set_xlabel("Average Words per Sentence")
-        ax.tick_params(axis="y", labelsize=7)
-
-        plt.tight_layout()
-        plt.show()
