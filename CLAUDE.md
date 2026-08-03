@@ -1,6 +1,6 @@
 # Project Overview
 
-create from scratch a very basic language model trianed only on philosophy books. This will be done by testing different architectures (transformers) and evalauting responses. The books are downloaded from the gutenbergpy library and stored as .txt files as well as metadata for each book. A full structured pipeline from data extraction and cleaning to a basic frontend where users can interect with the trained model.
+A from scratch very basic language model trianed only on philosophy books. This will be done by testing different architectures (transformers) and evalauting responses. The books are downloaded from the gutenbergpy library and stored as .txt files as well as metadata for each book. A full structured pipeline from data extraction and cleaning to a basic frontend where users can interect with the trained model. The goal is to learn, not blindly copy
 
 ## Plotting style
 - `plt.style.use("dark_background")`
