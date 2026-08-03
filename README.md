@@ -75,7 +75,7 @@ Socrates_AI/
 │   ├── pre_processing.ipynb       # data download, cleaning, EDA
 │   ├── model_creation.ipynb       # tokeniser + model build + training
 │   └── runthrough.ipynb           # end-to-end walkthrough
-├── data/                          # gitignored — created locally by TheFarmer
+├── data/                          # in .gitignore, files created locally by TheFarmer
 ├── pyproject.toml
 └── README.md
 ```
