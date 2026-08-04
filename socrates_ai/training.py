@@ -69,15 +69,6 @@ class TrainingSocrates:
         return losses.mean().item()
 
     def _lr_for_step(self, step):
-        # keyed off the GLOBAL step count, not the size of whatever train()
-        # call happens to be running -- warmup only ever happens once, in the
-        # first warmup_steps of all training ever, and decay progresses
-        # smoothly toward decay_target_steps no matter how many separate
-        # sessions it takes to get there. A resumed session doesn't reset
-        # either phase: the optimiser state (Adam's momentum) is restored
-        # from the checkpoint too, so there's nothing unstable left for a
-        # fresh warmup to protect against -- re-triggering it would only
-        # waste steps re-ramping back up to where the LR already was
         if step < self.warmup_steps:
             return self.lr * step / max(1, self.warmup_steps)
         progress = (step - self.warmup_steps) / max(1, self.decay_target_steps - self.warmup_steps)
@@ -208,12 +199,23 @@ class TrainingSocrates:
         plt.show()
 
     @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=0.7, eos_id=None):
+    def generate(self, idx, max_new_tokens, temperature=0.7, eos_id=None, top_k_sampling=0):
         self.model.eval()
         for _ in range(max_new_tokens):
             idx_cond = idx if idx.size(1) <= self.block_size else idx[:, -self.block_size :]
             logits, _ = self.model(idx_cond)
             last_logits = logits[:, -1, :] / temperature
+
+            if top_k_sampling > 0:
+                # zero out everything except the top_k_sampling highest-probability
+                # tokens (by masking their logits to -inf before softmax) -- removes
+                # the long low-probability tail that occasionally gets sampled and
+                # derails a sentence, without changing the model itself
+                k = min(top_k_sampling, last_logits.size(-1))
+                top_k_vals, _ = torch.topk(last_logits, k)
+                threshold = top_k_vals[:, -1].unsqueeze(-1)
+                last_logits = last_logits.masked_fill(last_logits < threshold, float("-inf"))
+
             probs = F.softmax(last_logits, dim=-1)
             next_id = torch.multinomial(probs, num_samples=1)
             idx = torch.cat([idx, next_id], dim=1)
@@ -222,9 +224,9 @@ class TrainingSocrates:
         self.model.train()
         return idx
 
-    def talk(self, tokeniser, prompt, max_new_tokens=100, temperature=1.0, stop_at_eos=True):
+    def talk(self, tokeniser, prompt, max_new_tokens=100, temperature=1.0, stop_at_eos=True, top_k_sampling=0):
         prompt_ids = tokeniser.encode(prompt).ids
         idx = torch.tensor([prompt_ids], dtype=torch.long, device=self.device)
         eos_id = tokeniser.token_to_id("<eos>") if stop_at_eos else None
-        out_ids = self.generate(idx, max_new_tokens, temperature, eos_id)
+        out_ids = self.generate(idx, max_new_tokens, temperature, eos_id, top_k_sampling=top_k_sampling)
         return tokeniser.decode(out_ids[0].tolist())
